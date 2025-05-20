@@ -2,49 +2,133 @@ const User = require('./User');
 const DrivingSchool = require('./DrivingSchool');
 const Instructor = require('./Instructor');
 const Course = require('./Course');
+const CourseSession = require('./CourseSession');
 const Enrollment = require('./Enrollment');
 const Schedule = require('./Schedule');
 const Exam = require('./Exam');
+const Payment = require('./Payment');
 
 // User relationships
-User.hasMany(Enrollment, { foreignKey: 'userId' });
-Enrollment.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Enrollment, { 
+  foreignKey: 'studentId',
+  as: 'enrollments'
+});
+Enrollment.belongsTo(User, { 
+  foreignKey: 'studentId',
+  as: 'student'
+});
 
 // DrivingSchool relationships
-DrivingSchool.hasMany(Instructor, { foreignKey: 'drivingSchoolId' });
-Instructor.belongsTo(DrivingSchool, { foreignKey: 'drivingSchoolId' });
+User.hasMany(DrivingSchool, {
+  foreignKey: 'managerId',
+  as: 'managedSchools'
+});
+DrivingSchool.belongsTo(User, {
+  foreignKey: 'managerId',
+  as: 'manager'
+});
 
-DrivingSchool.hasMany(Course, { foreignKey: 'drivingSchoolId' });
-Course.belongsTo(DrivingSchool, { foreignKey: 'drivingSchoolId' });
+DrivingSchool.hasMany(Instructor, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'instructors'
+});
+Instructor.belongsTo(DrivingSchool, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'drivingSchool'
+});
 
-DrivingSchool.hasMany(Enrollment, { foreignKey: 'drivingSchoolId' });
-Enrollment.belongsTo(DrivingSchool, { foreignKey: 'drivingSchoolId' });
+DrivingSchool.hasMany(Course, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'courses'
+});
+Course.belongsTo(DrivingSchool, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'drivingSchool'
+});
+
+DrivingSchool.hasMany(Enrollment, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'enrollments'
+});
+Enrollment.belongsTo(DrivingSchool, { 
+  foreignKey: 'drivingSchoolId',
+  as: 'drivingSchool'
+});
 
 // Instructor relationships
-Instructor.belongsTo(User, { foreignKey: 'userId' });
-Instructor.hasMany(Schedule, { foreignKey: 'instructorId' });
-Schedule.belongsTo(Instructor, { foreignKey: 'instructorId' });
-Instructor.hasMany(Exam, { foreignKey: 'instructorId' });
+Instructor.belongsTo(User, { 
+  foreignKey: 'userId',
+  as: 'user'
+});
 
-// Course relationships
-Course.hasMany(Enrollment, { foreignKey: 'courseId' });
-Enrollment.belongsTo(Course, { foreignKey: 'courseId' });
-Course.hasMany(Exam, { foreignKey: 'courseId' });
+User.hasOne(Instructor, {
+  foreignKey: 'userId',
+  as: 'instructorProfile'
+});
+
+Instructor.hasMany(Schedule, { 
+  foreignKey: 'instructorId',
+  as: 'schedules'
+});
+Schedule.belongsTo(Instructor, { 
+  foreignKey: 'instructorId',
+  as: 'instructor'
+});
+
+Instructor.hasMany(Exam, { 
+  foreignKey: 'instructorId',
+  as: 'exams'
+});
+Exam.belongsTo(Instructor, { 
+  foreignKey: 'instructorId',
+  as: 'instructor'
+});
 
 // Enrollment relationships
-Enrollment.hasMany(Schedule, { foreignKey: 'enrollmentId' });
-Schedule.belongsTo(Enrollment, { foreignKey: 'enrollmentId' });
-Enrollment.hasMany(Exam, { foreignKey: 'enrollmentId' });
+User.hasMany(Enrollment, {
+  foreignKey: 'instructorId',
+  as: 'instructorEnrollments'
+});
+Enrollment.belongsTo(User, {
+  foreignKey: 'instructorId',
+  as: 'instructor'
+});
 
-// Schedule relationships
-Schedule.belongsTo(Course, { foreignKey: 'courseId' });
+Enrollment.hasMany(CourseSession, { 
+  foreignKey: 'enrollmentId',
+  as: 'sessions'
+});
+CourseSession.belongsTo(Enrollment, { 
+  foreignKey: 'enrollmentId',
+  as: 'enrollment'
+});
+
+Enrollment.hasMany(Payment, { 
+  foreignKey: 'enrollmentId',
+  as: 'payments'
+});
+Payment.belongsTo(Enrollment, { 
+  foreignKey: 'enrollmentId',
+  as: 'enrollment'
+});
+
+Enrollment.hasMany(Exam, { 
+  foreignKey: 'enrollmentId',
+  as: 'exams'
+});
+Exam.belongsTo(Enrollment, { 
+  foreignKey: 'enrollmentId',
+  as: 'enrollment'
+});
 
 module.exports = {
   User,
   DrivingSchool,
   Instructor,
   Course,
+  CourseSession,
   Enrollment,
   Schedule,
-  Exam
+  Exam,
+  Payment
 };
