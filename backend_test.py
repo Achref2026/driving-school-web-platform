@@ -78,6 +78,7 @@ class DrivingSchoolAPITester:
 
     def test_register_driving_school(self):
         """Test driving school registration"""
+        school_manager_email = f"school_manager_{datetime.now().strftime('%H%M%S')}@example.com"
         success, response = self.run_test(
             "Driving School Registration",
             "POST",
@@ -86,7 +87,7 @@ class DrivingSchoolAPITester:
             data={
                 "firstName": "School",
                 "lastName": "Manager",
-                "email": f"school_manager_{datetime.now().strftime('%H%M%S')}@example.com",
+                "email": school_manager_email,
                 "password": self.test_password,
                 "phoneNumber": "1234567890",
                 "address": "123 School St",
@@ -95,6 +96,7 @@ class DrivingSchoolAPITester:
                 "gender": "male"
             }
         )
+        
         if success and 'token' in response:
             self.token = response['token']
             
