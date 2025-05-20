@@ -11,7 +11,7 @@ class DrivingSchoolAPITester:
         self.test_user_email = f"test_user_{datetime.now().strftime('%H%M%S')}@example.com"
         self.test_password = "TestPass123!"
         self.school_id = None
-        self.course_id = None
+        self.enrollment_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None):
         """Run a single API test"""
@@ -53,40 +53,12 @@ class DrivingSchoolAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
-    def test_root_endpoint(self):
-        """Test the root API endpoint"""
-        return self.run_test(
-            "Root API Endpoint",
-            "GET",
-            "",
-            200
-        )[0]
-
-    def test_status_endpoint(self):
-        """Test the status endpoint"""
-        return self.run_test(
-            "Status Endpoint",
-            "POST",
-            "status",
-            200,
-            data={"client_name": "API Tester"}
-        )[0]
-
-    def test_get_status_checks(self):
-        """Test getting status checks"""
-        return self.run_test(
-            "Get Status Checks",
-            "GET",
-            "status",
-            200
-        )[0]
-
-    def test_register_user(self):
-        """Test user registration"""
+    def test_register_student(self):
+        """Test student registration"""
         success, response = self.run_test(
-            "User Registration",
+            "Student Registration",
             "POST",
-            "users/register",
+            "auth/register",
             201,
             data={
                 "firstName": "Test",
@@ -104,12 +76,63 @@ class DrivingSchoolAPITester:
             self.token = response['token']
         return success
 
+    def test_register_driving_school(self):
+        """Test driving school registration"""
+        success, response = self.run_test(
+            "Driving School Registration",
+            "POST",
+            "auth/register",
+            201,
+            data={
+                "firstName": "School",
+                "lastName": "Manager",
+                "email": f"school_manager_{datetime.now().strftime('%H%M%S')}@example.com",
+                "password": self.test_password,
+                "phoneNumber": "1234567890",
+                "address": "123 School St",
+                "role": "manager",
+                "region": "Alger",
+                "gender": "male"
+            }
+        )
+        if success and 'token' in response:
+            self.token = response['token']
+            
+            # Now create the driving school
+            school_success, school_response = self.run_test(
+                "Create Driving School",
+                "POST",
+                "driving-schools",
+                201,
+                data={
+                    "name": f"Test Driving School {datetime.now().strftime('%H%M%S')}",
+                    "address": "123 School St",
+                    "region": "Alger",
+                    "phoneNumber": "1234567890",
+                    "email": f"school_{datetime.now().strftime('%H%M%S')}@example.com",
+                    "description": "A test driving school for API testing",
+                    "licenseNumber": "TEST123",
+                    "hasMaleInstructors": True,
+                    "hasFemaleInstructors": True,
+                    "priceCode": "5000",
+                    "priceParking": "8000",
+                    "priceRoad": "12000"
+                }
+            )
+            
+            if school_success and 'id' in school_response:
+                self.school_id = school_response['id']
+                print(f"Created driving school with ID: {self.school_id}")
+                
+            return school_success
+        return success
+
     def test_login(self):
         """Test login"""
         success, response = self.run_test(
             "User Login",
             "POST",
-            "users/login",
+            "auth/login",
             200,
             data={
                 "email": self.test_user_email,
@@ -129,33 +152,25 @@ class DrivingSchoolAPITester:
         return self.run_test(
             "Get User Profile",
             "GET",
-            "users/me",
+            "auth/me",
             200
         )[0]
 
     def test_get_all_schools(self):
         """Test getting all schools"""
         success, response = self.run_test(
-            "Get All Schools",
+            "Get All Driving Schools",
             "GET",
             "driving-schools",
             200
         )
         
-        if success and len(response) > 0:
+        if success and isinstance(response, list) and len(response) > 0:
             self.school_id = response[0]['id']
             print(f"Found school ID: {self.school_id}")
+            return True
         
-        return success[0] if isinstance(success, tuple) else success
-
-    def test_get_schools_by_region(self):
-        """Test getting schools by region"""
-        return self.run_test(
-            "Get Schools by Region",
-            "GET",
-            "driving-schools/region/Alger",
-            200
-        )[0]
+        return success
 
     def test_get_school_by_id(self):
         """Test getting a school by ID"""
@@ -164,97 +179,94 @@ class DrivingSchoolAPITester:
             return False
         
         return self.run_test(
-            "Get School by ID",
+            "Get Driving School by ID",
             "GET",
             f"driving-schools/{self.school_id}",
             200
         )[0]
 
-    def test_register_school(self):
-        """Test school registration"""
-        success, response = self.run_test(
-            "School Registration",
-            "POST",
-            "driving-schools/register",
-            201,
-            data={
-                "name": f"Test Driving School {datetime.now().strftime('%H%M%S')}",
-                "address": "123 Test St",
-                "region": "Alger",
-                "phoneNumber": "1234567890",
-                "email": f"school_{datetime.now().strftime('%H%M%S')}@example.com",
-                "description": "A test driving school",
-                "licenseNumber": "TEST123",
-                "hasMaleInstructors": True,
-                "hasFemaleInstructors": True
-            }
-        )
-        
-        if success and 'id' in response:
-            self.school_id = response['id']
-        
-        return success[0] if isinstance(success, tuple) else success
-
-    def test_get_courses(self):
-        """Test getting courses for a school"""
-        if not self.school_id:
-            print("⚠️ Skipping courses test - no school ID available")
-            return False
-        
-        success, response = self.run_test(
-            "Get Courses for School",
-            "GET",
-            f"courses/school/{self.school_id}",
-            200
-        )
-        
-        if success and len(response) > 0:
-            self.course_id = response[0]['id']
-            print(f"Found course ID: {self.course_id}")
-        
-        return success[0] if isinstance(success, tuple) else success
-
-    def test_get_instructors(self):
-        """Test getting instructors for a school"""
-        if not self.school_id:
-            print("⚠️ Skipping instructors test - no school ID available")
-            return False
-        
-        return self.run_test(
-            "Get Instructors for School",
-            "GET",
-            f"instructors/school/{self.school_id}",
-            200
-        )[0]
-
     def test_create_enrollment(self):
         """Test creating an enrollment"""
-        if not self.token or not self.school_id or not self.course_id:
+        if not self.token or not self.school_id:
             print("⚠️ Skipping enrollment test - missing required IDs")
             return False
         
-        return self.run_test(
+        success, response = self.run_test(
             "Create Enrollment",
             "POST",
             "enrollments",
             201,
             data={
-                "courseId": self.course_id,
-                "drivingSchoolId": self.school_id
+                "drivingSchoolId": self.school_id,
+                "instructorId": "",  # Optional
+                "includeCode": True,
+                "includeParking": True,
+                "includeRoad": True
             }
+        )
+        
+        if success and response and 'enrollment' in response and 'id' in response['enrollment']:
+            self.enrollment_id = response['enrollment']['id']
+            print(f"Created enrollment with ID: {self.enrollment_id}")
+            return True
+            
+        return success
+
+    def test_get_student_enrollments(self):
+        """Test getting student enrollments"""
+        if not self.token:
+            print("⚠️ Skipping student enrollments test - no token available")
+            return False
+        
+        return self.run_test(
+            "Get Student Enrollments",
+            "GET",
+            "enrollments/student",
+            200
+        )[0]
+
+    def test_process_payment(self):
+        """Test processing a payment"""
+        if not self.token or not self.enrollment_id:
+            print("⚠️ Skipping payment test - missing required IDs")
+            return False
+        
+        return self.run_test(
+            "Process Algerian Payment",
+            "POST",
+            "payments/algerian",
+            201,
+            data={
+                "enrollmentId": self.enrollment_id,
+                "amount": "25000",
+                "cardType": "CIB",
+                "cardNumber": "1234567890123456",
+                "cardHolderName": "Test User",
+                "expiryDate": "12/25",
+                "cvv": "123"
+            }
+        )[0]
+
+    def test_get_student_payments(self):
+        """Test getting student payments"""
+        if not self.token:
+            print("⚠️ Skipping student payments test - no token available")
+            return False
+        
+        return self.run_test(
+            "Get Student Payments",
+            "GET",
+            "payments/student",
+            200
         )[0]
 
 def main():
     # Setup
     tester = DrivingSchoolAPITester()
     
-    # Test basic API endpoints
-    tester.test_root_endpoint()
-    tester.test_status_endpoint()
-    tester.test_get_status_checks()
-    
     # Test user authentication
-    register_success = tester.test_register_user()
+    print("\n===== Testing Student Registration and Login =====")
+    register_success = tester.test_register_student()
     if not register_success:
         print("⚠️ Registration failed, trying login with existing user...")
     
@@ -264,21 +276,26 @@ def main():
     else:
         tester.test_get_user_profile()
     
+    # Test driving school registration (with a new user)
+    print("\n===== Testing Driving School Registration =====")
+    tester.test_register_driving_school()
+    
     # Test school-related endpoints
+    print("\n===== Testing Driving School Endpoints =====")
     tester.test_get_all_schools()
-    tester.test_get_schools_by_region()
     tester.test_get_school_by_id()
     
+    # Test enrollment and payment (requires login as student)
     if login_success:
-        tester.test_register_school()
-    
-    # Test courses and instructors
-    tester.test_get_courses()
-    tester.test_get_instructors()
-    
-    # Test enrollment (requires login)
-    if login_success and tester.course_id:
-        tester.test_create_enrollment()
+        print("\n===== Testing Enrollment Process =====")
+        tester.test_login()  # Login again as student
+        enrollment_success = tester.test_create_enrollment()
+        if enrollment_success:
+            tester.test_process_payment()
+        
+        print("\n===== Testing Dashboard Data =====")
+        tester.test_get_student_enrollments()
+        tester.test_get_student_payments()
 
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
