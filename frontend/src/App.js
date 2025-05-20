@@ -15,6 +15,7 @@ import SchoolDetail from './pages/SchoolDetail';
 import SchoolRegister from './pages/SchoolRegister';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
+import Enrollment from './pages/Enrollment';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
@@ -32,7 +33,15 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/schools" element={<SchoolList />} />
-              <Route path="/schools/:id" element={<SchoolDetail />} />
+              <Route path="/driving-schools/:id" element={<SchoolDetail />} />
+              <Route 
+                path="/driving-schools/:id/enroll" 
+                element={
+                  <PrivateRoute>
+                    <Enrollment />
+                  </PrivateRoute>
+                } 
+              />
               <Route path="/school-register" element={<SchoolRegister />} />
               <Route 
                 path="/dashboard/*" 
