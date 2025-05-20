@@ -1,30 +1,33 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { connectDB } = require('./config/database');
+const morgan = require('morgan');
+const sequelize = require('./config/database');
 const routes = require('./routes');
-require('dotenv').config();
 
-// Init express
 const app = express();
 const PORT = process.env.PORT || 8001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(morgan('dev'));
 
-// Connect to DB
-connectDB();
+// Routes
+app.use('/', routes);
 
-// API Routes - all routes prefixed with /api
-app.use('/api', routes);
+// Sync database and start server
+async function startServer() {
+  try {
+    await sequelize.sync({ alter: true });
+    console.log('Database synchronized');
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Error starting server:', error);
+  }
+}
 
-// Root route for health check
-app.get('/', (req, res) => {
-  res.json({ message: 'Driving School Management API is running' });
-});
-
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+startServer();
